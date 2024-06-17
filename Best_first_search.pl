@@ -14,35 +14,36 @@ heuristic(d, 1).
 heuristic(e, 0).
 
 % Best-First Search algorithm
-best_first_search(Start, Goal, Path) :-
+best_first_search(Start, Goal, Path, Cost) :-
     heuristic(Start, H),
-    bfs([(H, Start, [Start])], Goal, Path).
+    bfs([(H, 0, Start, [Start])], Goal, Path, Cost).
 
 % Base case: if the first element in the priority queue is the goal
-bfs([(_, Goal, Path) | _], Goal, Path).
+bfs([(_, Cost, Goal, Path) | _], Goal, Path, Cost).
 
 % Recursive case: expand the first node and add its neighbors to the priority queue
-bfs([(_, Node, Path) | Rest], Goal, FinalPath) :-
-    findall((H, Neighbor, NewPath),
-            (edge(Node, Neighbor, _),
+bfs([(_, CostSoFar, Node, Path) | Rest], Goal, FinalPath, FinalCost) :-
+    findall((H, NewCost, Neighbor, NewPath),
+            (edge(Node, Neighbor, EdgeCost),
              \+ member(Neighbor, Path), % avoid cycles
              append(Path, [Neighbor], NewPath),
+             NewCost is CostSoFar + EdgeCost,
              heuristic(Neighbor, H)),
             Neighbors),
     append(Rest, Neighbors, NewQueue),
     insertion_sort(NewQueue, SortedQueue),
-    bfs(SortedQueue, Goal, FinalPath).
+    bfs(SortedQueue, Goal, FinalPath, FinalCost).
 
 % Insertion sort based on heuristic value
 insertion_sort(List, Sorted) :- i_sort(List, [], Sorted).
 i_sort([], Acc, Acc).
-i_sort([(H, N, P) | T], Acc, Sorted) :-
-    insert((H, N, P), Acc, NAcc),
+i_sort([(H, C, N, P) | T], Acc, Sorted) :-
+    insert((H, C, N, P), Acc, NAcc),
     i_sort(T, NAcc, Sorted).
 
-insert((H, N, P), [(H1, N1, P1) | T], [(H1, N1, P1) | NT]) :-
+insert((H, C, N, P), [(H1, C1, N1, P1) | T], [(H1, C1, N1, P1) | NT]) :-
     H > H1, !, 
-    insert((H, N, P), T, NT).
-insert((H, N, P), T, [(H, N, P) | T]).
+    insert((H, C, N, P), T, NT).
+insert((H, C, N, P), T, [(H, C, N, P) | T]).
 
-% Query example: best_first_search(a, e, Path).
+% Query example: best_first_search(a, e, Path, Cost).
